@@ -5,7 +5,7 @@ net:
   bert:
     _target_: src.models.components.backbone.bert.Bert
     model_dir: ${paths.model_dir}
-    aggregator_names: ['bert_pooler', 'max_pooler']
+    aggregator_names: ['bert_pooler', 'avg_pooler']
   classifier:
     _target_: src.models.components.backbone.classifier.MultSampleClassifier
     input_dim: 768

@@ -6,7 +6,7 @@ import torch.nn.functional as F
 def replace_masked_values(tensor: torch.Tensor, mask: torch.Tensor, replace_with: float) -> torch.Tensor:
     if tensor.dim() != mask.dim():
         raise ValueError('tensor.dim() (%d) != mask.dim() (%d)' % (tensor.dim(), mask.dim()))
-    return tensor.masked_fill((1 - mask).byte(), replace_with)
+    return tensor.masked_fill((1 - mask).bool(), replace_with)
 
 
 def masked_softmax(
@@ -28,7 +28,7 @@ def masked_softmax(
             result = result * mask
             result = result / (result.sum(dim=dim, keepdim=True) + 1e-13)
         else:
-            masked_vector = vector.masked_fill((1 - mask).byte(), mask_fill_value)
+            masked_vector = vector.masked_fill((1 - mask).bool(), mask_fill_value)
             result = F.softmax(masked_vector, dim=dim)
     return result
 

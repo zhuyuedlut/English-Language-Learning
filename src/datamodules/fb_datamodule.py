@@ -38,15 +38,15 @@ class FBDataset(Dataset):
         full_text = self.full_text[index]
         label = self.label[index]
 
-        inputs = self.tokenizer(full_text, max_length=self.max_length, pad_to_max_length=True, truncation=True)
+        inputs = self.tokenizer(full_text, max_length=self.max_length, padding='max_length', truncation=True)
 
         if self.is_train:
-            return torch.tensor(inputs['input_ids'], dtype=torch.float32), \
-                   torch.tensor(inputs['attention_mask'], dtype=torch.float32), \
-                   torch.tensor(label, dtype=torch.float32)
+            return torch.tensor(inputs['input_ids'], dtype=torch.long), \
+                   torch.tensor(inputs['attention_mask'], dtype=torch.long), \
+                   torch.tensor(label, dtype=torch.long)
 
-        return torch.tensor(inputs['input_ids'], dtype=torch.float32), \
-               torch.tensor(inputs['attention_mask'], dtype=torch.float32)
+        return torch.tensor(inputs['input_ids'], dtype=torch.long), \
+               torch.tensor(inputs['attention_mask'], dtype=torch.long)
 
 
 class FBDataModule(BaseKFoldDataModule):
@@ -107,7 +107,7 @@ class FBDataModule(BaseKFoldDataModule):
             batch_size=self.hparams.train_batch_size,
             shuffle=True,
             num_workers=self.hparams.num_workers,
-            pin_memory=True
+            pin_memory=self.hparams.pin_memory,
         )
 
     def val_dataloader(self) -> DataLoader:
@@ -116,7 +116,7 @@ class FBDataModule(BaseKFoldDataModule):
             batch_size=self.hparams.valid_batch_size,
             shuffle=False,
             num_workers=self.hparams.num_workers,
-            pin_memory=False
+            pin_memory=self.hparams.pin_memory,
         )
 
     def predict_dataloader(self) -> DataLoader:
@@ -125,7 +125,8 @@ class FBDataModule(BaseKFoldDataModule):
             batch_size=self.hparams.test_batch_size,
             shuffle=False,
             num_workers=self.hparams.num_workers,
-            pin_memory=False
+            pin_memory=True,
+            persistent_workers=True,
         )
 
 
