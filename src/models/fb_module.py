@@ -1,12 +1,14 @@
 from typing import Any, List
 
 import torch
+import torch.nn as nn
 
-from torch.nn import BCEWithLogitsLoss
 from torchmetrics import MeanMetric, MaxMetric
 from torchmetrics.classification.accuracy import Accuracy
 
 from pytorch_lightning import LightningModule
+
+from src.models.components.loss.RMSELoss import RMSELoss
 
 
 class FBModule(LightningModule):
@@ -20,58 +22,53 @@ class FBModule(LightningModule):
 
         self.save_hyperparameters(logger=False, ignore=["net"])
 
-        self.train_acc = Accuracy()
+        self.net = net
+
         self.val_acc = Accuracy()
 
         self.train_loss = MeanMetric()
         self.val_loss = MeanMetric()
 
-        self.val_acc_best = MaxMetric()
+        self.val_loss_best = MaxMetric()
+
+        self.loss = nn.SmoothL1Loss(reduction='mean')
 
     def forward(self, input_ids: torch.Tensor, attention_mask: torch.Tensor) -> Any:
-        return self.hparams.net(input_ids=input_ids, attention_mask=attention_mask)
+        return self.net(input_ids=input_ids, attention_mask=attention_mask)
 
-    def step(self, batch: Any):
-        input_ids, attention_mask, label = batch
+    def step(self, input_ids: torch.Tensor, attention_mask: torch.Tensor):
         output = self.forward(input_ids, attention_mask)
-        logits = output.logits
-        preds = torch.argmax(logits, dim=1)
 
-        return logits, preds, label
+        return output
 
     def training_step(self, batch: Any, batch_idx: int):
-        logits, preds, targets = self.step(batch)
-        loss = BCEWithLogitsLoss(logits, targets)
+        input_ids, attention_mask, labels = batch
+        logits = self.step(input_ids=input_ids, attention_mask=attention_mask)
+        loss = self.loss(logits, labels)
 
         self.train_loss(loss)
-        self.train_acc(preds, targets)
 
-        self.log("train/loss", self.train_loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("train/acc", self.train_acc, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("train/loss", self.train_loss, on_step=True, on_epoch=True, prog_bar=True)
 
-        return {"loss": loss, "preds": preds, "targets": targets}
-
-    def training_epoch_end(self, outputs: List[Any]) -> None:
-        pass
+        return {"loss": loss, "labels": labels}
 
     def validation_step(self, batch: Any, batch_idx: int):
-        logits, preds, targets = self.step(batch)
-        loss = BCEWithLogitsLoss(logits, targets)
+        input_ids, attention_mask, labels = batch
+        logits= self.step(input_ids=input_ids, attention_mask=attention_mask)
+        loss = self.loss(logits, labels)
 
         self.val_loss(loss)
-        self.val_acc(preds, targets)
         # Lightning 会根据on_step和on_epoch来记录metric，如果on_epoch=True logger会在epoch结束的时候自动调用compute
-        self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log("val/acc", self.val_acc, on_step=False, on_epoch=True, prog_bar=True)
+        self.log("val/loss", self.val_loss, on_step=True, on_epoch=True, prog_bar=True)
 
-        return {"loss": loss, "preds": preds, "targets": targets}
+        return {"loss": loss, "labels": labels}
 
     def validation_epoch_end(self, outputs: List[Any]):
-        acc = self.val_acc.compute()  # get current val acc
-        self.val_acc_best(acc)  # update best so far val acc
+        loss = self.val_loss.compute()  # get current val acc
+        self.val_loss_best(loss)  # update best so far val acc
         # log `val_acc_best` as a value through `.compute()` method, instead of as a metric object
         # otherwise metric would be reset by lightning after each epoch
-        self.log("val/acc_best", self.val_acc_best.compute(), prog_bar=True)
+        self.log("val/loss_best", self.val_loss_best.compute(), prog_bar=True)
 
     def configure_optimizers(self):
         optimizer = self.hparams.optimizer(params=self.parameters())

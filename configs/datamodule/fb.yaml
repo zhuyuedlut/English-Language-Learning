@@ -1,10 +1,10 @@
 _target_: src.datamodules.fb_datamodule.FBDataModule
 data_dir: ${paths.data_dir}
 model_dir: ${paths.model_dir}
-num_class: 3
+num_class: 6
 max_length: 512
-train_batch_size: 32
+train_batch_size: 16
 valid_batch_size: 16
 test_batch_size: 32
 num_workers: 0
-pin_memory: False
+pin_memory: True
