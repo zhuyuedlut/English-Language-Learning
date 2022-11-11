@@ -1,2 +1,2 @@
 _target_: src.loop.kfold.fit_loop.KFoldFitLoop
-num_folds: 5
+num_folds: ${num_folds}

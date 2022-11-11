@@ -66,6 +66,7 @@ class KFoldFitLoop(Loop):
         # self.trainer.test_loop.run()
         pass
 
+    # add current_fold data to checkpoint state dict
     def on_save_checkpoint(self) -> Dict[str, int]:
         return {"current_fold": self.current_fold}
 
@@ -77,6 +78,7 @@ class KFoldFitLoop(Loop):
         self.trainer.reset_val_dataloader()
         self.trainer.state.fn = TrainerFn.FITTING
         self.trainer.training = True
+        self.trainer.should_stop = False
 
     def __getattr__(self, key) -> Any:
         # requires to be overridden as attributes of the wrapped loop are being accessed.

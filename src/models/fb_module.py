@@ -3,12 +3,10 @@ from typing import Any, List
 import torch
 import torch.nn as nn
 
-from torchmetrics import MeanMetric, MaxMetric
+from torchmetrics import MeanMetric, MinMetric
 from torchmetrics.classification.accuracy import Accuracy
 
 from pytorch_lightning import LightningModule
-
-from src.models.components.loss.RMSELoss import RMSELoss
 
 
 class FBModule(LightningModule):
@@ -29,7 +27,7 @@ class FBModule(LightningModule):
         self.train_loss = MeanMetric()
         self.val_loss = MeanMetric()
 
-        self.val_loss_best = MaxMetric()
+        self.val_loss_best = MinMetric()
 
         self.loss = nn.SmoothL1Loss(reduction='mean')
 
@@ -48,7 +46,7 @@ class FBModule(LightningModule):
 
         self.train_loss(loss)
 
-        self.log("train/loss", self.train_loss, on_step=True, on_epoch=True, prog_bar=True)
+        self.log("train/loss", self.train_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
 
         return {"loss": loss, "labels": labels}
 
@@ -58,8 +56,9 @@ class FBModule(LightningModule):
         loss = self.loss(logits, labels)
 
         self.val_loss(loss)
-        # Lightning 会根据on_step和on_epoch来记录metric，如果on_epoch=True logger会在epoch结束的时候自动调用compute
-        self.log("val/loss", self.val_loss, on_step=True, on_epoch=True, prog_bar=True)
+        # If on_epoch is True, that specific self.log call accumulates and reduces all metrics to the end of the epoch.
+        # If on_step is True, that specific self.log call will NOT accumulate metrics. Instead it will generate a timeseries across steps.
+        self.log("val/loss", self.val_loss, on_step=False, on_epoch=True, prog_bar=True, sync_dist=True)
 
         return {"loss": loss, "labels": labels}
 
@@ -68,7 +67,7 @@ class FBModule(LightningModule):
         self.val_loss_best(loss)  # update best so far val acc
         # log `val_acc_best` as a value through `.compute()` method, instead of as a metric object
         # otherwise metric would be reset by lightning after each epoch
-        self.log("val/loss_best", self.val_loss_best.compute(), prog_bar=True)
+        self.log("val/loss_best", self.val_loss_best.compute(), prog_bar=True, sync_dist=True)
 
     def configure_optimizers(self):
         optimizer = self.hparams.optimizer(params=self.parameters())

@@ -1,0 +1,42 @@
+default:
+  - model_checkpoint.yaml
+
+model_checkpoint_0:
+  _target_: src.callbacks.kfold_model_checkpoint.KFoldModelCheckpoint
+  dirpath: ${paths.output_dir}/checkpoints
+  fold: 0
+  filename: "epoch_{epoch:03d}"
+  monitor: "val/loss"
+  mode: "min"
+
+model_checkpoint_1:
+  _target_: src.callbacks.kfold_model_checkpoint.KFoldModelCheckpoint
+  dirpath: ${paths.output_dir}/checkpoints
+  fold: 1
+  filename: "epoch_{epoch:03d}"
+  monitor: "val/loss"
+  mode: "min"
+
+model_checkpoint_2:
+  _target_: src.callbacks.kfold_model_checkpoint.KFoldModelCheckpoint
+  dirpath: ${paths.output_dir}/checkpoints
+  fold: 2
+  filename: "epoch_{epoch:03d}"
+  monitor: "val/loss"
+  mode: "min"
+
+model_checkpoint_3:
+  _target_: src.callbacks.kfold_model_checkpoint.KFoldModelCheckpoint
+  dirpath: ${paths.output_dir}/checkpoints
+  fold: 3
+  filename: "epoch_{epoch:03d}"
+  monitor: "val/loss"
+  mode: "min"
+
+model_checkpoint_4:
+  _target_: src.callbacks.kfold_model_checkpoint.KFoldModelCheckpoint
+  dirpath: ${paths.output_dir}/checkpoints
+  fold: 4
+  filename: "epoch_{epoch:03d}"
+  monitor: "val/loss"
+  mode: "min"

@@ -46,6 +46,7 @@ def train(cfg: DictConfig) -> Tuple[dict, dict]:
 
     object_dict = {
         "cfg": cfg,
+        "loop": kfold_loop,
         "datamodule": datamodule,
         "model": model,
         "callbacks": callbacks,
